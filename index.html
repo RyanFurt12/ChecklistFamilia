@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>Checklist de Hábitos</title>
+
+<style>
+  body {
+    font-family: Inter, Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: auto;
+  }
+
+  h1 {
+    text-align: center;
+    color: #fff;
+    margin-bottom: 20px;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  }
+
+  .date-box {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 15px;
+  }
+
+  .active-date {
+    font-weight: bold;
+    color: #5a4fcf;
+  }
+
+  input[type="date"], input[type="text"] {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background 0.2s;
+    justify-content: space-between;
+  }
+
+  .item:hover {
+    background: #f0f0ff;
+  }
+
+  .item-content {
+    display: flex;
+    align-items: center;
+  }
+
+  .item input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.3);
+  }
+
+  .points {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #2e7d32;
+  }
+
+  .section-title {
+    font-size: 0.9em;
+    color: #666;
+    text-transform: uppercase;
+    margin: 15px 0 8px 5px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 4px;
+  }
+
+  .btn-delete {
+    background: #ffeded;
+    color: #d32f2f;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+
+  .btn-delete:hover { background: #ffcdd2; }
+
+  .add-goal-box {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+
+  .add-goal-box input { flex-grow: 1; }
+
+  button.add-btn {
+    background: #5a4fcf;
+    color: white;
+    border: none;
+    padding: 0 15px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+  }
+
+  ul { padding-left: 18px; }
+  li { margin-bottom: 4px; }
+  .cycle-range { font-weight: bold; margin: 8px 0; }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>✅ Checklist Diário</h1>
+
+<div class="card">
+  <div class="date-box">
+    <label>Selecionar data</label>
+    <input type="date" id="datePicker">
+    <div class="active-date" id="activeDateText"></div>
+  </div>
+
+  <div class="section-title">Hábitos Fixo (Valem Pontos)</div>
+  <div id="checklist"></div>
+  
+  <div class="section-title">Metas Adicionais (Sem Pontos)</div>
+  <div id="extraGoalsList"></div>
+  
+  <div class="points" id="dailyPoints"></div>
+</div>
+
+<div class="card">
+  <h2>➕ Criar Meta Adicional</h2>
+  <div class="add-goal-box">
+    <input type="text" id="newGoalInput" placeholder="Ex: Meditar, Estudar Inglês...">
+    <button class="add-btn" onclick="addNewGoal()">Adicionar</button>
+  </div>
+  <small>Essas metas aparecerão em todos os dias, mas não somam pontos.</small>
+</div>
+
+<div class="card">
+  <h2>📊 Relatório por Ciclo</h2>
+  <select id="cycleSelect"></select>
+  <div class="cycle-range" id="cycleRange"></div>
+  <div><strong>Total:</strong> <span id="cyclePoints">0</span> pontos</div>
+
+  <h3>Detalhe por dia</h3>
+  <ul id="cycleDays"></ul>
+</div>
+
+</div>
+
+<script>
+// Itens que valem pontos
+const ITEMS = [
+  "Alimentação saudável",
+  "Comer salada (1 refeição)",
+  "Comer fruta (1 porção)",
+  "Não consumir doces",
+  "Não consumir fast food",
+  "Beber 2 litros de água",
+  "Dormir pelo menos 7 horas"
+];
+
+const STORAGE = "habitData";
+const GOALS_STORAGE = "habitCustomGoals";
+
+const data = JSON.parse(localStorage.getItem(STORAGE) || "{}");
+let customGoals = JSON.parse(localStorage.getItem(GOALS_STORAGE) || "[]");
+
+const datePicker = document.getElementById("datePicker");
+const checklistEl = document.getElementById("checklist");
+const extraGoalsEl = document.getElementById("extraGoalsList");
+
+function parseDate(key) {
+  const [y,m,d] = key.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+}
+
+function isWeekend(date) {
+  return date.getDay() === 0 || date.getDay() === 6;
+}
+
+function getCycle(date) {
+  let start, end;
+  if (date.getDate() >= 12) {
+    start = new Date(date.getFullYear(), date.getMonth(), 12);
+  } else {
+    start = new Date(date.getFullYear(), date.getMonth() - 1, 12);
+  }
+  end = new Date(start.getFullYear(), start.getMonth() + 1, 11);
+  return { start, end };
+}
+
+function save() {
+  localStorage.setItem(STORAGE, JSON.stringify(data));
+  localStorage.setItem(GOALS_STORAGE, JSON.stringify(customGoals));
+  updateCycleReport();
+}
+
+function addNewGoal() {
+  const input = document.getElementById("newGoalInput");
+  const val = input.value.trim();
+  if (val && !customGoals.includes(val)) {
+    customGoals.push(val);
+    input.value = "";
+    save();
+    loadChecklist(datePicker.value);
+  }
+}
+
+function deleteGoal(goal) {
+  if(confirm(`Remover a meta "${goal}" de todos os dias?`)) {
+    customGoals = customGoals.filter(g => g !== goal);
+    save();
+    loadChecklist(datePicker.value);
+  }
+}
+
+function loadChecklist(dateKey) {
+  if (!data[dateKey]) data[dateKey] = { checks: {}, points: 0 };
+
+  const date = parseDate(dateKey);
+  const value = isWeekend(date) ? 5 : 1;
+
+  document.getElementById("activeDateText").innerText =
+    `${date.toLocaleDateString("pt-BR")} — ${value} ponto(s) por check`;
+
+  // Renderizar Itens com Pontos
+  checklistEl.innerHTML = "";
+  ITEMS.forEach(item => {
+    checklistEl.appendChild(createItemRow(item, dateKey, value, true));
+  });
+
+  // Renderizar Metas Extras (Sem Pontos)
+  extraGoalsEl.innerHTML = "";
+  customGoals.forEach(goal => {
+    extraGoalsEl.appendChild(createItemRow(goal, dateKey, 0, false));
+  });
+
+  updatePoints(dateKey, value);
+}
+
+function createItemRow(text, dateKey, pointValue, isFixed) {
+  const div = document.createElement("label");
+  div.className = "item";
+
+  const left = document.createElement("div");
+  left.className = "item-content";
+
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = !!data[dateKey].checks[text];
+
+  cb.onchange = () => {
+    data[dateKey].checks[text] = cb.checked;
+    const date = parseDate(dateKey);
+    const weight = isWeekend(date) ? 5 : 1;
+    updatePoints(dateKey, weight);
+    save();
+  };
+
+  left.appendChild(cb);
+  left.appendChild(document.createTextNode(text));
+  div.appendChild(left);
+
+  // Botão de deletar apenas para metas customizadas
+  if (!isFixed) {
+    const btn = document.createElement("button");
+    btn.className = "btn-delete";
+    btn.innerText = "Excluir";
+    btn.onclick = () => deleteGoal(text);
+    div.appendChild(btn);
+  }
+
+  return div;
+}
+
+function updatePoints(dateKey, value) {
+  // Filtra apenas os itens que estão na lista oficial de pontos (ITEMS)
+  const count = ITEMS.filter(item => data[dateKey].checks[item]).length;
+  data[dateKey].points = count * value;
+  document.getElementById("dailyPoints").innerText =
+    `⭐ ${data[dateKey].points} pontos acumulados`;
+}
+
+function updateCycleReport() {
+  const select = document.getElementById("cycleSelect");
+  const currentVal = select.value;
+  select.innerHTML = "";
+
+  const cycles = {};
+  // Inclui o ciclo atual mesmo se não houver dados
+  const { start: currentStart } = getCycle(new Date());
+  cycles[formatKey(currentStart)] = currentStart;
+
+  Object.keys(data).forEach(k => {
+    const { start } = getCycle(parseDate(k));
+    cycles[formatKey(start)] = start;
+  });
+
+  Object.values(cycles)
+    .sort((a,b) => b - a)
+    .forEach(start => {
+      const end = new Date(start.getFullYear(), start.getMonth()+1, 11);
+      const opt = document.createElement("option");
+      opt.value = formatKey(start);
+      opt.text =
+        `${start.toLocaleDateString("pt-BR")} → ${end.toLocaleDateString("pt-BR")}`;
+      select.appendChild(opt);
+    });
+
+  select.value = currentVal || select.options[0].value;
+
+  const start = parseDate(select.value);
+  const end = new Date(start.getFullYear(), start.getMonth()+1, 11);
+
+  let total = 0;
+  const list = document.getElementById("cycleDays");
+  list.innerHTML = "";
+
+  Object.keys(data).sort().forEach(k => {
+    const d = parseDate(k);
+    if (d >= start && d <= end) {
+      total += data[k].points || 0;
+      const li = document.createElement("li");
+      li.innerText =
+        `${d.toLocaleDateString("pt-BR")} — ${data[k].points} pontos`;
+      list.appendChild(li);
+    }
+  });
+
+  document.getElementById("cycleRange").innerText =
+    `Ciclo: ${start.toLocaleDateString("pt-BR")} até ${end.toLocaleDateString("pt-BR")}`;
+  document.getElementById("cyclePoints").innerText = total;
+}
+
+const today = new Date();
+datePicker.value = formatKey(today);
+
+datePicker.onchange = () => loadChecklist(datePicker.value);
+document.getElementById("cycleSelect").onchange = updateCycleReport;
+
+loadChecklist(datePicker.value);
+updateCycleReport();
+</script>
+
+</body>
+</html>
