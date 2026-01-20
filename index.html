@@ -275,20 +275,32 @@ if (localStorage.getItem(THEME_STORAGE) === 'dark' ||
 const datePicker = document.getElementById("datePicker");
 
 function formatKey(date) { return date.toISOString().split('T')[0]; }
+
+
 function parseDate(key) { 
-  const [y, m, d] = key.split("-").map(Number);
-  return new Date(y, m - 1, d);
+  const parts = key.split("-").map(Number);
+  return new Date(parts[0], parts[1] - 1, parts[2]);
 }
 
 function setToday() {
-  datePicker.value = formatKey(new Date());
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  const dateNow = new Date(now.getTime() - (offset * 60 * 1000));
+  datePicker.value = dateNow.toISOString().split('T')[0];
   loadChecklist(datePicker.value);
 }
 
 function save() {
-  localStorage.setItem(STORAGE, JSON.stringify(data));
-  localStorage.setItem(GOALS_STORAGE, JSON.stringify(customGoals));
-  updateCycleReport();
+  try {
+    localStorage.setItem(STORAGE, JSON.stringify(data));
+    localStorage.setItem(GOALS_STORAGE, JSON.stringify(customGoals));
+    updateCycleReport();
+  } catch (e) {
+    console.error("Erro ao salvar no localStorage:", e);
+    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+      alert("Espaço de armazenamento cheio ou você está em Navegação Privada!");
+    }
+  }
 }
 
 function addNewGoal() {
