@@ -1,17 +1,16 @@
 {
-  "name": "Checklist de Hábitos",
-  "short_name": "Checklist",
-  "start_url": "index.html",
-  "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#6366f1",
-  "icons": [
-  {
-    "src": "https://cdn-icons-png.flaticon.com/512/5610/5610944.png",
-    "sizes": "512x512",
-    "type": "image/png",
-    "purpose": "any maskable" 
-  }
-]
-}
+    "name": "Checklist de Hábitos",
+    "short_name": "Checklist",
+    "start_url": "index.html",
+    "display": "standalone",
+    "background_color": "#f8fafc",
+    "theme_color": "#6366f1",
+    "icons": [
+        {
+            "src": "https://cdn-icons-png.flaticon.com/512/5610/5610944.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
 }
