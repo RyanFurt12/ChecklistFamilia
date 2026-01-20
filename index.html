@@ -10,12 +10,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Checklist">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5610/5610944.png">
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="/ChecklistFamilia/manifest.json">
 
   <script>
     if ('serviceWorker' in navigator) {
       // Usando ./ garante que ele procure na mesma pasta
-      navigator.serviceWorker.register('./sw.js')
+      navigator.serviceWorker.register('/ChecklistFamilia/sw.js')
         .then(reg => console.log('Worker registrado!', reg))
         .catch(err => console.log('Erro no Worker:', err));
     }
