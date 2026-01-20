@@ -1,16 +1,51 @@
 {
-    "name": "Checklist de Hábitos",
-    "short_name": "Checklist",
-    "start_url": "index.html",
-    "display": "standalone",
-    "background_color": "#f8fafc",
-    "theme_color": "#6366f1",
-    "icons": [
-        {
-            "src": "https://cdn-icons-png.flaticon.com/512/5610/5610944.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any maskable"
-        }
-    ]
+  "id": "/ChecklistFamilia/",
+  "name": "Checklist de Hábitos",
+  "short_name": "Checklist",
+  "description": "Aplicativo simples para organizar e acompanhar hábitos diários em formato de checklist.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+
+  "start_url": "/ChecklistFamilia/?source=pwa",
+  "scope": "/ChecklistFamilia/",
+  
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "portrait-primary",
+
+  "background_color": "#f8fafc",
+  "theme_color": "#6366f1",
+
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5610/5610944.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5610/5610944.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5610/5610944.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+
+  "categories": ["productivity", "lifestyle"],
+
+  "screenshots": [
+    {
+      "src": "screenshots/home.png",
+      "sizes": "1080x1920",
+      "type": "image/png"
+    }
+  ],
+
+  "prefer_related_applications": false
 }
