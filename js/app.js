@@ -33,9 +33,10 @@ function parseDate(key) {
 
 function setToday() {
     const now = new Date();
-    const offset = now.getTimezoneOffset();
-    const dateNow = new Date(now.getTime() - (offset * 60 * 1000));
-    datePicker.value = dateNow.toISOString().split('T')[0];
+    // Fix: Simple toISOString() uses UTC. We want local date.
+    // Easiest is to just use the YYYY-MM-DD from locale time
+    const localDate = now.toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
+    datePicker.value = localDate;
     loadChecklist(datePicker.value);
 }
 
@@ -232,6 +233,7 @@ function renderReportDetails() {
         if (period) {
             const report = getReportForRange(period.startDate, period.endDate, data);
             report.period.label = period.label;
+            report.period.id = period.id;
             updateReportView(report);
         }
     }
@@ -257,6 +259,15 @@ function generateCustomReport() {
     }
 }
 
+function setToday() {
+    const now = new Date();
+    // Fix: Simple toISOString() uses UTC. We want local date.
+    // Easiest is to just use the YYYY-MM-DD from locale time
+    const localDate = now.toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
+    datePicker.value = localDate;
+    loadChecklist(datePicker.value);
+}
+
 function updateReportView(report) {
     const list = document.getElementById("cycleDays");
     list.innerHTML = "";
@@ -272,8 +283,23 @@ function updateReportView(report) {
         return;
     }
 
-    const label = report.period.label || `${new Date(report.period.startDate).toLocaleDateString()} a ${new Date(report.period.endDate).toLocaleDateString()}`;
-    document.getElementById("cycleRange").innerText = label;
+    // Force short date format for iOS compatibility (and fix Timezone off-by-one by using string direct)
+    // report.period.startDate is YYYY-MM-DD
+    const startStr = report.period.startDate.split('-').reverse().join('/');
+    const endStr = report.period.endDate.split('-').reverse().join('/');
+
+    // Always show range + label
+    // If it's a standard label, we append the range so user sees it
+    // If it's custom, the label already contains it or we build it
+    let displayLabel = report.period.label;
+    if (report.period.id !== 'custom-range') {
+        displayLabel += ` (${startStr} a ${endStr})`;
+    } else {
+        // Custom range label logic from reporting.js might be verbose or not, ensure consistency
+        displayLabel = `Personalizado (${startStr} a ${endStr})`;
+    }
+
+    document.getElementById("cycleRange").innerText = displayLabel;
     document.getElementById("cyclePoints").innerText = report.totalPoints;
 
     // Render Warning if there are missing days
@@ -294,8 +320,8 @@ function updateReportView(report) {
         warningDiv.appendChild(title);
 
         const daysList = document.createElement("div");
-        // Show only first 5 to avoid clutter, or all? Let's show all as a comma list
-        const dateStrings = report.missingDays.map(d => d.date.toLocaleDateString("pt-BR").slice(0, 5)); // "dd/mm"
+        // Force short format here too, prevent timezone shift
+        const dateStrings = report.missingDays.map(d => d.dateKey.split('-').reverse().join('/').slice(0, 5));
         daysList.innerText = dateStrings.join(", ");
         warningDiv.appendChild(daysList);
 
@@ -317,14 +343,18 @@ function updateReportView(report) {
 
     report.days.forEach(day => {
         const li = document.createElement("li");
-        li.innerHTML = `<span>${day.date.toLocaleDateString("pt-BR")}</span> <strong>${day.points} pts</strong>`;
+        // Fix timezone shift by using dateKey string directly
+        const dateStr = day.dateKey.split('-').reverse().join('/');
+        li.innerHTML = `<span>${dateStr}</span> <strong>${day.points} pts</strong>`;
         list.appendChild(li);
     });
 }
 
 
 // Init
-datePicker.value = formatKey(new Date());
+// Fix initial load to use local date
+const initialDate = new Date().toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
+datePicker.value = initialDate;
 datePicker.onchange = () => loadChecklist(datePicker.value);
 
 // Initial Load
