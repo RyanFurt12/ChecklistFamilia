@@ -176,7 +176,7 @@ function createItemRow(text, dateKey, weight, isFixed) {
  * @param {number} weight - The point multiplier.
  */
 function updatePoints(dateKey, weight) {
-    const allItems = [...ITEMS, ...customGoals];
+    const allItems = [...ITEMS];
     const totalItems = allItems.length;
 
     let checkedCount = 0;
@@ -352,7 +352,7 @@ function updateReportView(report) {
     const endObj = DateUtils.parseDateKey(report.period.endDate);
     const currentIter = new Date(startObj);
 
-    const habitCount = ITEMS.length + customGoals.length;
+    const habitCount = ITEMS.length;
 
     while (currentIter <= endObj) {
         totalDaysInCycle++;
