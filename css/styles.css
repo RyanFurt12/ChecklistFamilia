@@ -1,0 +1,227 @@
+:root {
+  /* Cores do Tema Claro */
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --item-bg: #f1f5f9;
+  --item-hover: #e2e8f0;
+  --border: #e2e8f0;
+  --success: #22c55e;
+  --danger: #ef4444;
+}
+
+/* Variáveis do Tema Escuro */
+body.dark-mode {
+  --bg: #0f172a;
+  --card-bg: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --primary: #818cf8;
+  --primary-dark: #6366f1;
+  --item-bg: #334155;
+  --item-hover: #475569;
+  --border: #334155;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg);
+  color: var(--text-main);
+  margin: 0;
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 480px;
+  padding-bottom: 40px;
+}
+
+/* Header com Toggle de Tema */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: var(--primary);
+}
+
+.theme-toggle {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Seção de Data */
+.date-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.date-controls {
+  display: flex;
+  gap: 8px;
+}
+
+input[type="date"],
+input[type="text"],
+select {
+  flex-grow: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 16px;
+  outline: none;
+  background: var(--item-bg);
+  color: var(--text-main);
+}
+
+.btn-today {
+  padding: 0 15px;
+  border-radius: 12px;
+  border: none;
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+}
+
+.active-date-info {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Lista de Itens */
+.section-title {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 20px 0 10px 4px;
+  font-weight: 700;
+}
+
+.habit-item {
+  display: flex;
+  align-items: center;
+  background: var(--item-bg);
+  margin-bottom: 8px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.habit-item.checked {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: var(--success);
+}
+
+.habit-item input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+  accent-color: var(--success);
+}
+
+.habit-text {
+  flex-grow: 1;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.checked .habit-text {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.btn-delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  border: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+/* Pontuação */
+.points-badge {
+  text-align: center;
+  background: var(--primary);
+  color: white;
+  padding: 14px;
+  border-radius: 16px;
+  font-weight: 800;
+  margin-top: 15px;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.add-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: bold;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.cycle-summary {
+  background: var(--item-bg);
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  margin-top: 15px;
+}
+
+#cycleSelect {
+  width: 100%;
+}
+
+.day-log {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.day-log li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
