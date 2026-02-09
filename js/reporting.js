@@ -2,8 +2,10 @@
  * Custom Reporting Periods Logic
  */
 
-// 1. Defined Standard Periods (Strict)
-// Only these periods will be available in the strict selection.
+/**
+ * Configuration for standard reporting periods.
+ * @type {Array<Object>}
+ */
 const standardPeriods = [
     {
         "id": "2026-01",
@@ -76,38 +78,32 @@ const standardPeriods = [
         "label": "Ciclo Dezembro/26",
         "startDate": "2026-12-13",
         "endDate": "2026-12-31"
-    },
-    // Add more standard periods here as needed
+    }
 ];
 
 /**
- * Get the period object for a given ID.
- * @param {string} periodId 
+ * Retrieves a period object by its ID.
+ * @param {string} periodId - The ID of the period to retrieve.
+ * @returns {Object|undefined} The period object or undefined if not found.
  */
 function getPeriodById(periodId) {
     return standardPeriods.find(p => p.id === periodId);
 }
 
 /**
- * Get ALL configured standard periods.
+ * Retrieves all configured standard periods, sorted by start date (newest first).
+ * @returns {Array<Object>} A sorted array of period objects.
  */
 function getStandardPeriods() {
-    // Return sorted array (Newest Start Date first)
     return [...standardPeriods].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
 }
 
-
 /**
- * Generate a report for a specific date range (Ad-hoc)
- * @param {string} startDate - YYYY-MM-DD
- * @param {string} endDate - YYYY-MM-DD
- * @param {Object} data - The main storage object
- */
-/**
- * Generate a report for a specific date range (Ad-hoc)
- * @param {string} startDate - YYYY-MM-DD
- * @param {string} endDate - YYYY-MM-DD
- * @param {Object} data - The main storage object
+ * Generates a report for a specific date range.
+ * @param {string} startDate - The start date in YYYY-MM-DD format.
+ * @param {string} endDate - The end date in YYYY-MM-DD format.
+ * @param {Object} data - The application data object contaning daily records.
+ * @returns {Object} The generated report object containing totals, daily breakdown, and missing days.
  */
 function getReportForRange(startDate, endDate, data) {
     const report = {
@@ -119,22 +115,16 @@ function getReportForRange(startDate, endDate, data) {
         },
         totalPoints: 0,
         days: [],
-        missingDays: [] // Days with 0 points (up to today)
+        missingDays: []
     };
 
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
 
-    // Iterate through every day in the range
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateKey = d.toISOString().split('T')[0];
+        const dateKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         const points = (data[dateKey] && data[dateKey].points) || 0;
-
-        // Add to report if it has points OR if it's within the range (we want to show all days? 
-        // User asked for "warning for zero points", but report usually shows days with points.
-        // Let's keep "days" as the list of days WITH points for the main list, 
-        // and "missingDays" for the warning.
 
         if (points > 0) {
             report.totalPoints += points;
@@ -144,8 +134,6 @@ function getReportForRange(startDate, endDate, data) {
                 points: points
             });
         } else {
-            // Check for missing day warning
-            // Only if date <= today
             if (dateKey <= todayStr) {
                 report.missingDays.push({
                     date: new Date(dateKey),
@@ -155,7 +143,6 @@ function getReportForRange(startDate, endDate, data) {
         }
     }
 
-    // Sort days (Newest first)
     report.days.sort((a, b) => b.date - a.date);
     report.missingDays.sort((a, b) => b.date - a.date);
 

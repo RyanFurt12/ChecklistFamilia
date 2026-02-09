@@ -6,46 +6,62 @@ const THEME_STORAGE = "habitTheme";
 const data = JSON.parse(localStorage.getItem(STORAGE) || "{}");
 let customGoals = JSON.parse(localStorage.getItem(GOALS_STORAGE) || "[]");
 
-// --- Lógica de Tema ---
+/**
+ * Toggles the application theme between light and dark modes.
+ */
 function toggleTheme() {
     const isDark = document.body.classList.toggle('dark-mode');
     localStorage.setItem(THEME_STORAGE, isDark ? 'dark' : 'light');
     document.getElementById("themeToggle").innerText = isDark ? "☀️" : "🌙";
 }
 
-// Carregar tema salvo ou preferência do sistema
 if (localStorage.getItem(THEME_STORAGE) === 'dark' ||
     (!localStorage.getItem(THEME_STORAGE) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
     document.body.classList.add('dark-mode');
     document.getElementById("themeToggle").innerText = "☀️";
 }
 
-// --- Funções do Checklist ---
 const datePicker = document.getElementById("datePicker");
 
-function formatKey(date) { return date.toISOString().split('T')[0]; }
+/**
+ * Formats a Date object into a YYYY-MM-DD string.
+ * @param {Date} date - The date to format.
+ * @returns {string} The formatted date string.
+ */
+function formatKey(date) {
+    return date.toISOString().split('T')[0];
+}
 
-
+/**
+ * Parses a YYYY-MM-DD string into a Date object.
+ * @param {string} key - The date string to parse.
+ * @returns {Date} The parsed Date object.
+ */
 function parseDate(key) {
     const parts = key.split("-").map(Number);
     return new Date(parts[0], parts[1] - 1, parts[2]);
 }
 
+/**
+ * Sets the current date in the picker and reloads the checklist.
+ * Uses local time to avoid timezone issues.
+ */
 function setToday() {
     const now = new Date();
-    // Fix: Simple toISOString() uses UTC. We want local date.
-    // Easiest is to just use the YYYY-MM-DD from locale time
     const localDate = now.toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
     datePicker.value = localDate;
-    updateDateDisplay();
+    updateDateDisplay(localDate);
     loadChecklist(datePicker.value);
 }
 
+/**
+ * Saves current data and goals to localStorage.
+ * Updates the report view if active.
+ */
 function save() {
     try {
         localStorage.setItem(STORAGE, JSON.stringify(data));
         localStorage.setItem(GOALS_STORAGE, JSON.stringify(customGoals));
-        // Auto-update report if we are viewing one
         if (document.getElementById("cycleSelect").value !== 'custom') {
             renderReportDetails();
         }
@@ -58,6 +74,9 @@ function save() {
     }
 }
 
+/**
+ * Adds a new custom goal from the input field.
+ */
 function addNewGoal() {
     const input = document.getElementById("newGoalInput");
     const val = input.value.trim();
@@ -69,6 +88,11 @@ function addNewGoal() {
     }
 }
 
+/**
+ * Removes a custom goal.
+ * @param {Event} e - The click event.
+ * @param {string} goal - The goal text to remove.
+ */
 function deleteGoal(e, goal) {
     e.stopPropagation();
     if (confirm(`Remover "${goal}" de todos os dias?`)) {
@@ -78,6 +102,10 @@ function deleteGoal(e, goal) {
     }
 }
 
+/**
+ * Loads the checklist and points for a specific date.
+ * @param {string} dateKey - The date key (YYYY-MM-DD).
+ */
 function loadChecklist(dateKey) {
     if (!data[dateKey]) data[dateKey] = { checks: {}, points: 0 };
     const date = parseDate(dateKey);
@@ -98,6 +126,14 @@ function loadChecklist(dateKey) {
     updatePoints(dateKey, weight);
 }
 
+/**
+ * Creates a DOM element for a checklist item.
+ * @param {string} text - The item text.
+ * @param {string} dateKey - The current date key.
+ * @param {number} weight - The point weight for the item.
+ * @param {boolean} isFixed - Whether the item is a fixed system habit.
+ * @returns {HTMLElement} The created item element.
+ */
 function createItemRow(text, dateKey, weight, isFixed) {
     const container = document.createElement("div");
     const isChecked = !!data[dateKey].checks[text];
@@ -142,45 +178,49 @@ function createItemRow(text, dateKey, weight, isFixed) {
     return container;
 }
 
+/**
+ * Updates the total points display for the current day.
+ * @param {string} dateKey - The date key.
+ * @param {number} weight - The point multiplier.
+ */
 function updatePoints(dateKey, weight) {
     const count = ITEMS.filter(item => data[dateKey].checks[item]).length;
     data[dateKey].points = count * (weight || 1);
     document.getElementById("dailyPoints").innerText = `⭐ ${data[dateKey].points} Pontos`;
-    updateCycleReport(); // Refresh view
+    updateCycleReport();
 }
 
+/**
+ * Refreshes the cycle report if currently active.
+ */
 function updateCycleReport() {
     if (document.getElementById("cycleSelect").value !== 'custom') {
         renderReportDetails();
     }
 }
 
-// --- Reporting Logic ---
-
+/**
+ * Initializes the cycle report dropdown.
+ * Filters periods based on data presence or if it matches the current date.
+ */
 function initCycleReport() {
     const select = document.getElementById("cycleSelect");
     select.innerHTML = "";
 
-    // 1. Add Custom Option
     const customOpt = document.createElement("option");
     customOpt.value = "custom";
     customOpt.text = "🔧 Personalizado...";
     select.appendChild(customOpt);
 
-    // 2. Add Standard Configured Periods (Filtered)
     if (typeof getStandardPeriods !== 'undefined') {
         const allPeriods = getStandardPeriods();
         const today = new Date().toISOString().split('T')[0];
         let currentPeriodId = null;
 
-        // Filter: Show if (Has Points > 0) OR (Is Current Period)
         const visiblePeriods = allPeriods.filter(p => {
-            // Check if is current period
             const isCurrent = today >= p.startDate && today <= p.endDate;
             if (isCurrent) currentPeriodId = p.id;
 
-            // Check if has points
-            // Optimization: just need one day with points > 0 in range
             const hasPoints = Object.keys(data).some(k => {
                 return k >= p.startDate && k <= p.endDate && (data[k].points || 0) > 0;
             });
@@ -195,11 +235,6 @@ function initCycleReport() {
             select.appendChild(opt);
         });
 
-        // Default logic:
-        // 1. If today is in a valid period, select it (even if filtered out? logic above ensures it's visible)
-        // 2. Else if filtered list has items, select first (newest)
-        // 3. Else custom
-
         if (currentPeriodId && visiblePeriods.find(p => p.id === currentPeriodId)) {
             select.value = currentPeriodId;
         } else if (visiblePeriods.length > 0) {
@@ -212,6 +247,10 @@ function initCycleReport() {
     handleCycleChange();
 }
 
+/**
+ * Handles changes in the cycle selection dropdown.
+ * Toggles between standard report view and custom date range UI.
+ */
 function handleCycleChange() {
     const select = document.getElementById("cycleSelect");
     const customUI = document.getElementById("customRangeUI");
@@ -225,6 +264,9 @@ function handleCycleChange() {
     }
 }
 
+/**
+ * Renders report details for a selected standard period.
+ */
 function renderReportDetails() {
     const periodId = document.getElementById("cycleSelect").value;
     if (periodId === 'custom') return;
@@ -240,6 +282,9 @@ function renderReportDetails() {
     }
 }
 
+/**
+ * Generates and displays a report based on the custom date inputs.
+ */
 function generateCustomReport() {
     const start = document.getElementById("startDateInput").value;
     const end = document.getElementById("endDateInput").value;
@@ -260,54 +305,40 @@ function generateCustomReport() {
     }
 }
 
-function setToday() {
-    const now = new Date();
-    // Fix: Simple toISOString() uses UTC. We want local date.
-    // Easiest is to just use the YYYY-MM-DD from locale time
-    const localDate = now.toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
-    datePicker.value = localDate;
-    loadChecklist(datePicker.value);
-}
-
+/**
+ * Updates the report UI with the provided report data.
+ * @param {Object} report - The report object to display.
+ */
 function updateReportView(report) {
     const list = document.getElementById("cycleDays");
     list.innerHTML = "";
 
-    // Remove existing warning if any
     const existingWarning = document.getElementById("missingDaysWarning");
     if (existingWarning) existingWarning.remove();
 
-    // Clear totals if null report
     if (!report) {
         document.getElementById("cycleRange").innerText = "Selecione um período";
         document.getElementById("cyclePoints").innerText = "0";
         return;
     }
 
-    // Force short date format for iOS compatibility (and fix Timezone off-by-one by using string direct)
-    // report.period.startDate is YYYY-MM-DD
     const startStr = report.period.startDate.split('-').reverse().join('/');
     const endStr = report.period.endDate.split('-').reverse().join('/');
 
-    // Always show range + label
-    // If it's a standard label, we append the range so user sees it
-    // If it's custom, the label already contains it or we build it
     let displayLabel = report.period.label;
     if (report.period.id !== 'custom-range') {
         displayLabel += ` (${startStr} a ${endStr})`;
     } else {
-        // Custom range label logic from reporting.js might be verbose or not, ensure consistency
         displayLabel = `Personalizado (${startStr} a ${endStr})`;
     }
 
     document.getElementById("cycleRange").innerText = displayLabel;
     document.getElementById("cyclePoints").innerText = report.totalPoints;
 
-    // Render Warning if there are missing days
     if (report.missingDays && report.missingDays.length > 0) {
         const warningDiv = document.createElement("div");
         warningDiv.id = "missingDaysWarning";
-        warningDiv.style.background = "#fff3cd"; // Warning yellow
+        warningDiv.style.background = "#fff3cd";
         warningDiv.style.color = "#856404";
         warningDiv.style.padding = "10px";
         warningDiv.style.borderRadius = "12px";
@@ -321,7 +352,6 @@ function updateReportView(report) {
         warningDiv.appendChild(title);
 
         const daysList = document.createElement("div");
-        // Force short format here too, prevent timezone shift
         const dateStrings = report.missingDays.map(d => d.dateKey.split('-').reverse().join('/').slice(0, 5));
         daysList.innerText = dateStrings.join(", ");
         warningDiv.appendChild(daysList);
@@ -333,7 +363,6 @@ function updateReportView(report) {
         footer.style.fontSize = "11px";
         warningDiv.appendChild(footer);
 
-        // Insert before list
         list.parentElement.insertBefore(warningDiv, list);
     }
 
@@ -344,23 +373,23 @@ function updateReportView(report) {
 
     report.days.forEach(day => {
         const li = document.createElement("li");
-        // Fix timezone shift by using dateKey string directly
         const dateStr = day.dateKey.split('-').reverse().join('/');
         li.innerHTML = `<span>${dateStr}</span> <strong>${day.points} pts</strong>`;
         list.appendChild(li);
     });
 }
 
-
-// Init
-// Fix initial load to use local date
 const initialDate = new Date().toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
 datePicker.value = initialDate;
 
-function updateDateDisplay() {
-    const val = datePicker.value;
-    if (val) {
-        document.getElementById("dateDisplay").innerText = val.split('-').reverse().join('/');
+/**
+ * Updates the custom date display element to show the formatted date.
+ * @param {string} [val] - Optional date value to display.
+ */
+function updateDateDisplay(val) {
+    const dateVal = val || datePicker.value;
+    if (dateVal) {
+        document.getElementById("dateDisplay").innerText = dateVal.split('-').reverse().join('/');
     } else {
         document.getElementById("dateDisplay").innerText = '--/--/----';
     }
@@ -371,8 +400,6 @@ datePicker.onchange = () => {
     loadChecklist(datePicker.value);
 };
 
-// Initial Load
 updateDateDisplay();
 loadChecklist(datePicker.value);
-// Wait for scripts to load if needed, or run immediately if at bottom of body
 initCycleReport();
