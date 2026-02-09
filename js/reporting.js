@@ -10,7 +10,7 @@ const standardPeriods = [
     {
         "id": "2026-01",
         "label": "Ciclo Janeiro/26",
-        "startDate": "2026-01-11",
+        "startDate": "2026-01-12",
         "endDate": "2026-02-07"
     },
     {

@@ -421,3 +421,15 @@ body.dark-mode .badge-weekday {
   border-radius: 12px;
   font-size: 0.85rem;
 }
+
+.report-period-header {
+  text-align: center;
+  font-weight: 500;
+  color: var(--primary);
+  margin-bottom: 12px;
+  background: var(--item-bg);
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 0.95rem;
+}

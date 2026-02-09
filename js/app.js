@@ -157,10 +157,9 @@ function createItemRow(text, dateKey, weight, isFixed) {
 
         data[dateKey].checks[text] = isNowChecked;
         container.classList.toggle('checked', isNowChecked);
-        // Play distinct animation on check
         if (isNowChecked) {
             container.style.animation = 'none';
-            container.offsetHeight; /* trigger reflow */
+            container.offsetHeight;
             container.style.animation = null;
         }
 
@@ -180,8 +179,6 @@ function updatePoints(dateKey, weight) {
     const allItems = [...ITEMS, ...customGoals];
     const totalItems = allItems.length;
 
-    // Count checked items based on what is currently in the list
-    // (This ensures consistency if goals were removed but still in data)
     let checkedCount = 0;
     allItems.forEach(item => {
         if (data[dateKey].checks[item]) checkedCount++;
@@ -189,10 +186,8 @@ function updatePoints(dateKey, weight) {
 
     data[dateKey].points = checkedCount * (weight || 1);
 
-    // Update Points Text
     document.getElementById("dailyPoints").innerText = `⭐ ${data[dateKey].points} Pontos`;
 
-    // Update Progress Bar
     const percentage = totalItems === 0 ? 0 : Math.round((checkedCount / totalItems) * 100);
     const progressBar = document.getElementById("progressBar");
     if (progressBar) {
@@ -326,6 +321,8 @@ function updateReportView(report) {
     const dashboard = document.getElementById("reportDashboard");
     const activityList = document.getElementById("activityReportList");
 
+    const periodDisplay = document.getElementById("reportPeriodDisplay");
+
     list.innerHTML = "";
     activityList.innerHTML = "";
 
@@ -339,11 +336,15 @@ function updateReportView(report) {
 
     dashboard.style.display = 'block';
 
-    // --- 1. Calculate Stats & Context ---
+    const startStr = DateUtils.formatDisplay(report.period.startDate);
+    const endStr = DateUtils.formatDisplay(report.period.endDate);
+    if (periodDisplay) {
+        periodDisplay.innerText = `📅 ${startStr} a ${endStr}`;
+    }
+
     const totalPoints = report.totalPoints;
     const daysWithPoints = report.days.length;
 
-    // Calculate Total Possible Points & Days in Cycle
     let totalPossiblePoints = 0;
     let totalDaysInCycle = 0;
 
@@ -351,7 +352,6 @@ function updateReportView(report) {
     const endObj = DateUtils.parseDateKey(report.period.endDate);
     const currentIter = new Date(startObj);
 
-    // Count active goals (SYSTEM + CUSTOM)
     const habitCount = ITEMS.length + customGoals.length;
 
     while (currentIter <= endObj) {
@@ -364,7 +364,6 @@ function updateReportView(report) {
     }
 
 
-    // --- 2. Calculate Habit Frequency ---
     const habitCounts = {};
     const allItems = [...ITEMS, ...customGoals];
     allItems.forEach(h => habitCounts[h] = 0);
@@ -380,12 +379,9 @@ function updateReportView(report) {
         }
     });
 
-    // Convert to array and sort by frequency (DESC)
     const sortedHabits = Object.entries(habitCounts)
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count);
-
-    // Find Best/Worst
     let bestHabit = "-";
     let worstHabit = "-";
 
@@ -394,12 +390,10 @@ function updateReportView(report) {
         const min = sortedHabits[sortedHabits.length - 1].count;
 
         if (max > 0) bestHabit = sortedHabits[0].name;
-        // Only show worst if min < max (meaning there's a difference) and we have data
         if (min < max && daysWithPoints > 0) worstHabit = sortedHabits[sortedHabits.length - 1].name;
     }
 
 
-    // --- 3. Update Dashboard Text ---
     document.getElementById("statTotalPoints").innerHTML = `${totalPoints} <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">/ ${totalPossiblePoints}</span>`;
     document.getElementById("statDaysCount").innerHTML = `${daysWithPoints} <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">/ ${totalDaysInCycle} dias</span>`;
 
@@ -410,10 +404,7 @@ function updateReportView(report) {
     document.getElementById("statWorstHabit").style.fontSize = worstHabit.length > 15 ? "0.8rem" : "1.0rem";
 
 
-    // --- 4. Render Activity List ---
     sortedHabits.forEach(habit => {
-        // Only show if it matches current filter or has counts? Show all for completeness or just active?
-        // User wants "report of each activity". Showing all (even 0) provides good feedback.
         const row = document.createElement("div");
         row.className = "activity-row";
 
@@ -431,7 +422,6 @@ function updateReportView(report) {
     });
 
 
-    // --- 5. Render Warnings ---
     const reportAlerts = document.getElementById("reportAlerts");
     reportAlerts.innerHTML = "";
 
@@ -442,7 +432,7 @@ function updateReportView(report) {
         warningDiv.style.color = "#856404";
         warningDiv.style.padding = "10px";
         warningDiv.style.borderRadius = "12px";
-        warningDiv.style.marginBottom = "0"; // container has margin
+        warningDiv.style.marginBottom = "0";
         warningDiv.style.fontSize = "13px";
         warningDiv.style.border = "1px solid #ffeeba";
 
