@@ -95,7 +95,12 @@ function getPeriodById(periodId) {
  * @returns {Array<Object>} A sorted array of period objects.
  */
 function getStandardPeriods() {
-    return [...standardPeriods].sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+    return [...standardPeriods].sort((a, b) => {
+        // Simple string comparison is sufficient for YYYY-MM-DD
+        if (b.startDate > a.startDate) return 1;
+        if (b.startDate < a.startDate) return -1;
+        return 0;
+    });
 }
 
 /**
@@ -109,7 +114,7 @@ function getReportForRange(startDate, endDate, data) {
     const report = {
         period: {
             id: 'custom-range',
-            label: `Personalizado (${startDate} a ${endDate})`,
+            label: `Personalizado (${DateUtils.formatDisplay(startDate)} a ${DateUtils.formatDisplay(endDate)})`,
             startDate: startDate,
             endDate: endDate
         },
@@ -118,33 +123,41 @@ function getReportForRange(startDate, endDate, data) {
         missingDays: []
     };
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const todayStr = new Date().toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
+    // Use DateUtils to get today's key in BRT
+    const todayStr = DateUtils.getTodayKey();
 
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    // Iterate safely from start to end
+    // We start with the parsed Date (noon BRT)
+    let current = DateUtils.parseDateKey(startDate);
+    const end = DateUtils.parseDateKey(endDate);
+
+    while (current <= end) {
+        // Format back to string for key lookup
+        const dateKey = DateUtils.formatDate(current);
         const points = (data[dateKey] && data[dateKey].points) || 0;
 
         if (points > 0) {
             report.totalPoints += points;
             report.days.push({
-                date: new Date(dateKey),
-                dateKey: dateKey,
+                dateKey: dateKey, // Keep string for consistent sorting/display
                 points: points
             });
         } else {
+            // Only count as missing if it's in the past or today
             if (dateKey <= todayStr) {
                 report.missingDays.push({
-                    date: new Date(dateKey),
                     dateKey: dateKey
                 });
             }
         }
+
+        // Add 1 day
+        current.setDate(current.getDate() + 1);
     }
 
-    report.days.sort((a, b) => b.date - a.date);
-    report.missingDays.sort((a, b) => b.date - a.date);
+    // Sort by date key descending
+    report.days.sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+    report.missingDays.sort((a, b) => b.dateKey.localeCompare(a.dateKey));
 
     return report;
 }
@@ -152,3 +165,4 @@ function getReportForRange(startDate, endDate, data) {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { standardPeriods, getPeriodById, getStandardPeriods, getReportForRange };
 }
+

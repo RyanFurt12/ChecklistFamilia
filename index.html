@@ -13,14 +13,7 @@
   <link rel="manifest" href="/ChecklistFamilia/manifest.json">
   <link rel="stylesheet" href="css/styles.css">
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      // Usando ./ garante que ele procure na mesma pasta
-      navigator.serviceWorker.register('/ChecklistFamilia/sw.js')
-        .then(reg => console.log('Worker registrado!', reg))
-        .catch(err => console.log('Erro no Worker:', err));
-    }
-  </script>
+
 </head>
 
 <body>
@@ -41,6 +34,10 @@
           <button class="btn-today" onclick="setToday()">Hoje</button>
         </div>
         <div class="active-date-info" id="activeDateText"></div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-fill" id="progressBar"></div>
       </div>
 
       <div class="section-title">Hábitos Diários</div>
@@ -78,18 +75,56 @@
           onclick="generateCustomReport()">Filtrar</button>
       </div>
 
-      <div class="cycle-summary">
+      <div class="cycle-summary" style="display:none">
         <div id="cycleRange" style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;"></div>
         <strong>Total: <span id="cyclePoints">0</span> pts</strong>
       </div>
+
+      <!-- Dashboard -->
+      <div id="reportDashboard" style="display:none">
+        <div id="reportAlerts" style="margin-bottom: 15px;"></div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">⭐</div>
+            <div class="stat-value" id="statTotalPoints">0</div>
+            <div class="stat-label">Total Pontos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-value" id="statDaysCount">0</div>
+            <div class="stat-label">Dias Feitos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-value" id="statBestHabit">-</div>
+            <div class="stat-label">Hábito Campeão</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-value" id="statWorstHabit">-</div>
+            <div class="stat-label">Precisa de Foco</div>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-left:5px">Frequência por Atividade</div>
+        <div class="activity-list" id="activityReportList"></div>
+      </div>
+
       <ul class="day-log" id="cycleDays"></ul>
     </div>
 
   </div>
 
+  <script src="js/dateUtils.js"></script>
   <script src="js/reporting.js"></script>
   <script src="js/app.js"></script>
-
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('Service Worker registrado', reg))
+        .catch(err => console.log('Erro ao registrar Service Worker', err));
+    }
+  </script>
 </body>
 
 </html>

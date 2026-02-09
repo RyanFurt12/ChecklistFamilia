@@ -24,33 +24,13 @@ if (localStorage.getItem(THEME_STORAGE) === 'dark' ||
 const datePicker = document.getElementById("datePicker");
 
 /**
- * Formats a Date object into a YYYY-MM-DD string.
- * @param {Date} date - The date to format.
- * @returns {string} The formatted date string.
- */
-function formatKey(date) {
-    return date.toISOString().split('T')[0];
-}
-
-/**
- * Parses a YYYY-MM-DD string into a Date object.
- * @param {string} key - The date string to parse.
- * @returns {Date} The parsed Date object.
- */
-function parseDate(key) {
-    const parts = key.split("-").map(Number);
-    return new Date(parts[0], parts[1] - 1, parts[2]);
-}
-
-/**
  * Sets the current date in the picker and reloads the checklist.
  * Uses local time to avoid timezone issues.
  */
 function setToday() {
-    const now = new Date();
-    const localDate = now.toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
-    datePicker.value = localDate;
-    updateDateDisplay(localDate);
+    const today = DateUtils.getTodayKey();
+    datePicker.value = today;
+    updateDateDisplay(today);
     loadChecklist(datePicker.value);
 }
 
@@ -108,11 +88,17 @@ function deleteGoal(e, goal) {
  */
 function loadChecklist(dateKey) {
     if (!data[dateKey]) data[dateKey] = { checks: {}, points: 0 };
-    const date = parseDate(dateKey);
-    const weight = (date.getDay() === 0 || date.getDay() === 6) ? 5 : 1;
 
-    document.getElementById("activeDateText").innerText =
-        `${weight === 5 ? 'Fim de Semana (5x Pontos)' : 'Dia de Semana (1x Ponto)'}`;
+    // 0 = Sunday, 6 = Saturday
+    const dayOfWeek = DateUtils.getDayOfWeek(dateKey);
+    const weight = (dayOfWeek === 0 || dayOfWeek === 6) ? 5 : 1;
+
+    const activeDateText = document.getElementById("activeDateText");
+    if (weight === 5) {
+        activeDateText.innerHTML = '<span class="badge badge-weekend">Fim de Semana (5x)</span>';
+    } else {
+        activeDateText.innerHTML = '<span class="badge badge-weekday">Dia de Semana (1x)</span>';
+    }
 
     const checklistEl = document.getElementById("checklist");
     const extraGoalsEl = document.getElementById("extraGoalsList");
@@ -171,6 +157,13 @@ function createItemRow(text, dateKey, weight, isFixed) {
 
         data[dateKey].checks[text] = isNowChecked;
         container.classList.toggle('checked', isNowChecked);
+        // Play distinct animation on check
+        if (isNowChecked) {
+            container.style.animation = 'none';
+            container.offsetHeight; /* trigger reflow */
+            container.style.animation = null;
+        }
+
         updatePoints(dateKey, weight);
         save();
     };
@@ -184,9 +177,28 @@ function createItemRow(text, dateKey, weight, isFixed) {
  * @param {number} weight - The point multiplier.
  */
 function updatePoints(dateKey, weight) {
-    const count = ITEMS.filter(item => data[dateKey].checks[item]).length;
-    data[dateKey].points = count * (weight || 1);
+    const allItems = [...ITEMS, ...customGoals];
+    const totalItems = allItems.length;
+
+    // Count checked items based on what is currently in the list
+    // (This ensures consistency if goals were removed but still in data)
+    let checkedCount = 0;
+    allItems.forEach(item => {
+        if (data[dateKey].checks[item]) checkedCount++;
+    });
+
+    data[dateKey].points = checkedCount * (weight || 1);
+
+    // Update Points Text
     document.getElementById("dailyPoints").innerText = `⭐ ${data[dateKey].points} Pontos`;
+
+    // Update Progress Bar
+    const percentage = totalItems === 0 ? 0 : Math.round((checkedCount / totalItems) * 100);
+    const progressBar = document.getElementById("progressBar");
+    if (progressBar) {
+        progressBar.style.width = `${percentage}%`;
+    }
+
     updateCycleReport();
 }
 
@@ -214,7 +226,7 @@ function initCycleReport() {
 
     if (typeof getStandardPeriods !== 'undefined') {
         const allPeriods = getStandardPeriods();
-        const today = new Date().toISOString().split('T')[0];
+        const today = DateUtils.getTodayKey();
         let currentPeriodId = null;
 
         const visiblePeriods = allPeriods.filter(p => {
@@ -311,29 +323,117 @@ function generateCustomReport() {
  */
 function updateReportView(report) {
     const list = document.getElementById("cycleDays");
+    const dashboard = document.getElementById("reportDashboard");
+    const activityList = document.getElementById("activityReportList");
+
     list.innerHTML = "";
+    activityList.innerHTML = "";
 
     const existingWarning = document.getElementById("missingDaysWarning");
     if (existingWarning) existingWarning.remove();
 
     if (!report) {
-        document.getElementById("cycleRange").innerText = "Selecione um período";
-        document.getElementById("cyclePoints").innerText = "0";
+        dashboard.style.display = 'none';
         return;
     }
 
-    const startStr = report.period.startDate.split('-').reverse().join('/');
-    const endStr = report.period.endDate.split('-').reverse().join('/');
+    dashboard.style.display = 'block';
 
-    let displayLabel = report.period.label;
-    if (report.period.id !== 'custom-range') {
-        displayLabel += ` (${startStr} a ${endStr})`;
-    } else {
-        displayLabel = `Personalizado (${startStr} a ${endStr})`;
+    // --- 1. Calculate Stats & Context ---
+    const totalPoints = report.totalPoints;
+    const daysWithPoints = report.days.length;
+
+    // Calculate Total Possible Points & Days in Cycle
+    let totalPossiblePoints = 0;
+    let totalDaysInCycle = 0;
+
+    const startObj = DateUtils.parseDateKey(report.period.startDate);
+    const endObj = DateUtils.parseDateKey(report.period.endDate);
+    const currentIter = new Date(startObj);
+
+    // Count active goals (SYSTEM + CUSTOM)
+    const habitCount = ITEMS.length + customGoals.length;
+
+    while (currentIter <= endObj) {
+        totalDaysInCycle++;
+        const dayKey = DateUtils.formatDate(currentIter);
+        const dayOfWeek = DateUtils.getDayOfWeek(dayKey);
+        const weight = (dayOfWeek === 0 || dayOfWeek === 6) ? 5 : 1;
+        totalPossiblePoints += (habitCount * weight);
+        currentIter.setDate(currentIter.getDate() + 1);
     }
 
-    document.getElementById("cycleRange").innerText = displayLabel;
-    document.getElementById("cyclePoints").innerText = report.totalPoints;
+
+    // --- 2. Calculate Habit Frequency ---
+    const habitCounts = {};
+    const allItems = [...ITEMS, ...customGoals];
+    allItems.forEach(h => habitCounts[h] = 0);
+
+    report.days.forEach(day => {
+        const dayData = data[day.dateKey];
+        if (dayData && dayData.checks) {
+            Object.keys(dayData.checks).forEach(habit => {
+                if (dayData.checks[habit]) {
+                    habitCounts[habit] = (habitCounts[habit] || 0) + 1;
+                }
+            });
+        }
+    });
+
+    // Convert to array and sort by frequency (DESC)
+    const sortedHabits = Object.entries(habitCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count);
+
+    // Find Best/Worst
+    let bestHabit = "-";
+    let worstHabit = "-";
+
+    if (sortedHabits.length > 0) {
+        const max = sortedHabits[0].count;
+        const min = sortedHabits[sortedHabits.length - 1].count;
+
+        if (max > 0) bestHabit = sortedHabits[0].name;
+        // Only show worst if min < max (meaning there's a difference) and we have data
+        if (min < max && daysWithPoints > 0) worstHabit = sortedHabits[sortedHabits.length - 1].name;
+    }
+
+
+    // --- 3. Update Dashboard Text ---
+    document.getElementById("statTotalPoints").innerHTML = `${totalPoints} <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">/ ${totalPossiblePoints}</span>`;
+    document.getElementById("statDaysCount").innerHTML = `${daysWithPoints} <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">/ ${totalDaysInCycle} dias</span>`;
+
+    document.getElementById("statBestHabit").innerText = bestHabit;
+    document.getElementById("statBestHabit").style.fontSize = bestHabit.length > 15 ? "0.8rem" : "1.0rem";
+
+    document.getElementById("statWorstHabit").innerText = worstHabit;
+    document.getElementById("statWorstHabit").style.fontSize = worstHabit.length > 15 ? "0.8rem" : "1.0rem";
+
+
+    // --- 4. Render Activity List ---
+    sortedHabits.forEach(habit => {
+        // Only show if it matches current filter or has counts? Show all for completeness or just active?
+        // User wants "report of each activity". Showing all (even 0) provides good feedback.
+        const row = document.createElement("div");
+        row.className = "activity-row";
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "activity-name";
+        nameSpan.innerText = habit.name;
+
+        const countSpan = document.createElement("span");
+        countSpan.className = "activity-count";
+        countSpan.innerText = `${habit.count}x`;
+
+        row.appendChild(nameSpan);
+        row.appendChild(countSpan);
+        activityList.appendChild(row);
+    });
+
+
+    // --- 5. Render Warnings ---
+    const reportAlerts = document.getElementById("reportAlerts");
+    reportAlerts.innerHTML = "";
 
     if (report.missingDays && report.missingDays.length > 0) {
         const warningDiv = document.createElement("div");
@@ -342,7 +442,7 @@ function updateReportView(report) {
         warningDiv.style.color = "#856404";
         warningDiv.style.padding = "10px";
         warningDiv.style.borderRadius = "12px";
-        warningDiv.style.marginBottom = "15px";
+        warningDiv.style.marginBottom = "0"; // container has margin
         warningDiv.style.fontSize = "13px";
         warningDiv.style.border = "1px solid #ffeeba";
 
@@ -352,7 +452,7 @@ function updateReportView(report) {
         warningDiv.appendChild(title);
 
         const daysList = document.createElement("div");
-        const dateStrings = report.missingDays.map(d => d.dateKey.split('-').reverse().join('/').slice(0, 5));
+        const dateStrings = report.missingDays.map(d => DateUtils.formatDisplay(d.dateKey).slice(0, 5));
         daysList.innerText = dateStrings.join(", ");
         warningDiv.appendChild(daysList);
 
@@ -363,7 +463,7 @@ function updateReportView(report) {
         footer.style.fontSize = "11px";
         warningDiv.appendChild(footer);
 
-        list.parentElement.insertBefore(warningDiv, list);
+        reportAlerts.appendChild(warningDiv);
     }
 
     if (report.days.length === 0) {
@@ -373,13 +473,13 @@ function updateReportView(report) {
 
     report.days.forEach(day => {
         const li = document.createElement("li");
-        const dateStr = day.dateKey.split('-').reverse().join('/');
+        const dateStr = DateUtils.formatDisplay(day.dateKey);
         li.innerHTML = `<span>${dateStr}</span> <strong>${day.points} pts</strong>`;
         list.appendChild(li);
     });
 }
 
-const initialDate = new Date().toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
+const initialDate = DateUtils.getTodayKey();
 datePicker.value = initialDate;
 
 /**
@@ -389,7 +489,7 @@ datePicker.value = initialDate;
 function updateDateDisplay(val) {
     const dateVal = val || datePicker.value;
     if (dateVal) {
-        document.getElementById("dateDisplay").innerText = dateVal.split('-').reverse().join('/');
+        document.getElementById("dateDisplay").innerText = DateUtils.formatDisplay(dateVal);
     } else {
         document.getElementById("dateDisplay").innerText = '--/--/----';
     }

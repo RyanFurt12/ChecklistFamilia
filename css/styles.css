@@ -260,3 +260,164 @@ select {
   justify-content: space-between;
   font-size: 14px;
 }
+
+/* Progress Bar */
+.progress-container {
+  background-color: var(--item-bg);
+  border-radius: 50px;
+  height: 10px;
+  width: 100%;
+  margin-bottom: 20px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--border);
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+  height: 100%;
+  width: 0%;
+  border-radius: 50px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-weekend {
+  background-color: #fef3c7;
+  color: #d97706;
+  border: 1px solid #fcd34d;
+}
+
+.badge-weekday {
+  background-color: #e0e7ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+body.dark-mode .badge-weekend {
+  background-color: #78350f;
+  color: #fcd34d;
+  border-color: #92400e;
+}
+
+body.dark-mode .badge-weekday {
+  background-color: #312e81;
+  color: #e0e7ff;
+  border-color: #4338ca;
+}
+
+.day-log li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+/* Animations */
+@keyframes pulse-check {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.habit-item:active {
+  transform: scale(0.98);
+}
+
+.habit-item.checked {
+  animation: pulse-check 0.3s ease-in-out;
+}
+
+
+/* Report Dashboard */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  padding: 15px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+
+.activity-list {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+
+.activity-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.95rem;
+}
+
+.activity-row:last-child {
+  border-bottom: none;
+}
+
+.activity-name {
+  font-weight: 500;
+}
+
+.activity-count {
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--item-bg);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+}
