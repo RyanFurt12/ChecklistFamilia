@@ -34,7 +34,10 @@
     <div class="card">
       <div class="date-header">
         <div class="date-controls">
-          <input type="date" id="datePicker">
+          <div class="custom-date-wrapper">
+            <span id="dateDisplay">--/--/----</span>
+            <input type="date" id="datePicker">
+          </div>
           <button class="btn-today" onclick="setToday()">Hoje</button>
         </div>
         <div class="active-date-info" id="activeDateText"></div>
@@ -66,8 +69,10 @@
       <div id="customRangeUI"
         style="display: none; background: var(--item-bg); padding: 10px; border-radius: 12px; margin-bottom: 15px;">
         <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-          <input type="date" id="startDateInput" placeholder="Início">
-          <input type="date" id="endDateInput" placeholder="Fim">
+          <input type="text" id="startDateInput" placeholder="Início" onfocus="(this.type='date')"
+            onblur="(this.value ? this.type='date' : this.type='text')">
+          <input type="text" id="endDateInput" placeholder="Fim" onfocus="(this.type='date')"
+            onblur="(this.value ? this.type='date' : this.type='text')">
         </div>
         <button class="add-btn" style="padding: 8px; margin-top: 0; font-size: 14px;"
           onclick="generateCustomReport()">Filtrar</button>

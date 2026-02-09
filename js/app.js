@@ -37,6 +37,7 @@ function setToday() {
     // Easiest is to just use the YYYY-MM-DD from locale time
     const localDate = now.toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
     datePicker.value = localDate;
+    updateDateDisplay();
     loadChecklist(datePicker.value);
 }
 
@@ -355,9 +356,23 @@ function updateReportView(report) {
 // Fix initial load to use local date
 const initialDate = new Date().toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
 datePicker.value = initialDate;
-datePicker.onchange = () => loadChecklist(datePicker.value);
+
+function updateDateDisplay() {
+    const val = datePicker.value;
+    if (val) {
+        document.getElementById("dateDisplay").innerText = val.split('-').reverse().join('/');
+    } else {
+        document.getElementById("dateDisplay").innerText = '--/--/----';
+    }
+}
+
+datePicker.onchange = () => {
+    updateDateDisplay();
+    loadChecklist(datePicker.value);
+};
 
 // Initial Load
+updateDateDisplay();
 loadChecklist(datePicker.value);
 // Wait for scripts to load if needed, or run immediately if at bottom of body
 initCycleReport();

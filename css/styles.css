@@ -104,6 +104,41 @@ select {
   outline: none;
   background: var(--item-bg);
   color: var(--text-main);
+  /* Fix iOS default appearance */
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+}
+
+/* Custom Date Wrapper for iOS Fix */
+.custom-date-wrapper {
+  position: relative;
+  flex-grow: 1;
+  display: flex;
+  /* Ensure it takes space */
+}
+
+.custom-date-wrapper input[type="date"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+#dateDisplay {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--item-bg);
+  color: var(--text-main);
+  text-align: center;
+  font-weight: 500;
 }
 
 .btn-today {
